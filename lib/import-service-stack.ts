@@ -1,4 +1,5 @@
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -48,5 +49,24 @@ export class ImportServiceStack extends cdk.Stack {
 
     const importResource = api.root.addResource('import');
     importResource.addMethod('GET', new apigateway.LambdaIntegration(importProductsFile));
+
+
+    // 5.3.1: Creating Lambda importFileParser
+    const importFileParser = new NodejsFunction(this, 'ImportFileParserHandler', {
+      entry: path.join(__dirname, '../lambda/import/importFileParser.ts'),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      environment: {
+        REGION: this.region,
+      },
+    });
+
+    bucket.grantRead(importFileParser);
+    bucket.grantDelete(importFileParser);
+
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(importFileParser),
+      { prefix: 'uploaded/' } // Only for files in folder uploaded/
+    );
   }
 }
