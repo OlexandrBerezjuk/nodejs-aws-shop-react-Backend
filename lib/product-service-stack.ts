@@ -30,6 +30,20 @@ export class ProductServiceStack extends cdk.Stack {
 
     const productsResource = api.root.addResource('products');
     productsResource.addMethod('GET', new apigateway.LambdaIntegration(getProductsList));
+
+
+    const getProductsById = new NodejsFunction(this, 'getProductsById', {
+      entry: path.join(__dirname, '../lambda/products/getProductsById.ts'),
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      environment: {
+        REGION: this.region,
+        // Here we can specify DynamoDB table later
+      },
+    });
+
+    const productResource = productsResource.addResource('{productId}');
+    productResource.addMethod('GET', new apigateway.LambdaIntegration(getProductsById));
   }
 
 }
