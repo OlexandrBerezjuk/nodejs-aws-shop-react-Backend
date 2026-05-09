@@ -7,18 +7,30 @@ const docClient = DynamoDBDocumentClient.from(client);
 export const handler = async (event: any) => {
   console.log('Received event:', JSON.stringify(event, null, 2));
 
-  const command = new ScanCommand({
-    TableName: process.env.TABLE_NAME, // Table name which we passed in CDK
-  });
+  try {
+    const [productsData, stocksData] = await Promise.all([
+      docClient.send(new ScanCommand({ TableName: process.env.PRODUCTS_TABLE })),
+      docClient.send(new ScanCommand({ TableName: process.env.STOCKS_TABLE })),
+    ]);
 
-  const response = await docClient.send(command);
+    const products = productsData.Items || [];
+    const stocks = stocksData.Items || [];
 
-  return {
-    statusCode: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*", // allow access from any origin
-      "Access-Control-Allow-Methods": "GET",
-    },
-    body: JSON.stringify(response.Items),
-  };
+    // Join by ID to combine product details with stock count
+    const joinedData = products.map((product) => ({
+      ...product,
+      count: stocks.find((s) => s.product_id === product.id)?.count || 0,
+    }));
+
+    return {
+      statusCode: 200,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify(joinedData),
+    };
+  } catch (error: any) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: error.message }),
+    };
+  }
 };

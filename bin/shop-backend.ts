@@ -11,6 +11,7 @@ const dbStack = new DatabaseStack(app, 'DatabaseStack');
 
 new ProductServiceStack(app, 'ProductServiceStack', {
   productsTable: dbStack.productsTable,
+  stocksTable: dbStack.stocksTable,
 });
 new ImportServiceStack(app, 'ImportServiceStack', {});
 // new ImportServiceStack(app, 'ImportServiceStack', {
