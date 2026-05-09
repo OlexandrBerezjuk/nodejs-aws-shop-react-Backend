@@ -1,12 +1,17 @@
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cdk from 'aws-cdk-lib';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
+interface ProductServiceStackProps extends cdk.StackProps {
+  productsTable: dynamodb.ITable;
+}
+
 export class ProductServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ProductServiceStackProps) {
     super(scope, id, props);
 
     const getProductsList = new NodejsFunction(this, 'getProductsList', {
@@ -15,9 +20,12 @@ export class ProductServiceStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       environment: {
         REGION: this.region,
-        // Here we can specify DynamoDB table later
+        TABLE_NAME: props.productsTable.tableName,
       },
     });
+
+    // Giving the lambda permissions to read from this table
+    props.productsTable.grantReadData(getProductsList);
 
     const api = new apigateway.RestApi(this, 'ProductsApi', {
       restApiName: 'Product Service',
@@ -38,9 +46,12 @@ export class ProductServiceStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       environment: {
         REGION: this.region,
-        // Here we can specify DynamoDB table later
+        TABLE_NAME: props.productsTable.tableName,
       },
     });
+
+    // Giving the lambda permissions to read from this table
+    props.productsTable.grantReadData(getProductsById);
 
     const productResource = productsResource.addResource('{productId}');
     productResource.addMethod('GET', new apigateway.LambdaIntegration(getProductsById));

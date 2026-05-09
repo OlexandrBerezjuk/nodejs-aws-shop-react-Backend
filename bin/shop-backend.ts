@@ -1,10 +1,17 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
+
+import { DatabaseStack } from '../lib/database-stack';
 import { ImportServiceStack } from '../lib/import-service-stack';
 import { ProductServiceStack } from '../lib/product-service-stack';
 
 const app = new cdk.App();
-new ProductServiceStack(app, 'ProductServiceStack', {});
+
+const dbStack = new DatabaseStack(app, 'DatabaseStack');
+
+new ProductServiceStack(app, 'ProductServiceStack', {
+  productsTable: dbStack.productsTable,
+});
 new ImportServiceStack(app, 'ImportServiceStack', {});
 // new ImportServiceStack(app, 'ImportServiceStack', {
 //   /* If you don't specify 'env', this stack will be environment-agnostic.

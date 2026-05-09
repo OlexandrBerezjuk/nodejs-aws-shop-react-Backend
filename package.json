@@ -9,29 +9,36 @@
     "build": "npm run clean && tsc",
     "watch": "tsc -w",
     "test": "jest",
+    "seed": "tsx scripts/seed-db.ts",
     "cdk": "cdk",
     "validate": "cdk synth",
     "deploy:import": "cdk deploy ImportServiceStack",
     "deploy:products": "cdk deploy ProductServiceStack",
+    "deploy:dynamodb": "cdk deploy DatabaseStack",
     "deploy:all": "cdk deploy --all"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
+    "@types/uuid": "^11.0.0",
     "aws-cdk": "2.1119.0",
     "esbuild": "^0.28.0",
     "jest": "^30",
     "rimraf": "^6.1.3",
     "ts-jest": "^29",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1045.0",
     "@aws-sdk/client-s3": "^3.1043.0",
+    "@aws-sdk/lib-dynamodb": "^3.1045.0",
     "@aws-sdk/s3-request-presigner": "^3.1043.0",
     "aws-cdk-lib": "^2.248.0",
     "constructs": "^10.5.0",
-    "csv-parser": "^3.2.0"
+    "csv-parser": "^3.2.0",
+    "uuid": "^14.0.0"
   }
 }
