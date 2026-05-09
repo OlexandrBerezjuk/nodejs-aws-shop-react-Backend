@@ -5,6 +5,8 @@ export interface Product {
   title: string,
 };
 
+// Mock data for testing purposes
+
 export const products: Product[] = [
   {
     description: "Short Product Description1",
