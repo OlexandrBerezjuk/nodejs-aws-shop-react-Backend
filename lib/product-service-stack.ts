@@ -6,6 +6,8 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cdk from 'aws-cdk-lib';
 import * as path from 'path';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subs from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 
 interface ProductServiceStackProps extends cdk.StackProps {
@@ -75,7 +77,9 @@ export class ProductServiceStack extends cdk.Stack {
     // Instead of a bunch of lines here, you just call "sub-methods"
     // TODO - refactor all lambda and tables creation above into separate methods for better readability and maintainability
     this.catalogItemsQueue = this.createCatalogSQS();
-    this.createCatalogBatchLambda(props.productsTable, props.stocksTable, this.catalogItemsQueue);
+    const productTopic = this.createProductTopic();
+
+    this.createCatalogBatchLambda(props.productsTable, props.stocksTable, this.catalogItemsQueue, productTopic);
   }
 
   // Private method to create the SQS queue for batch processing
@@ -86,15 +90,34 @@ export class ProductServiceStack extends cdk.Stack {
   }
 
   // Private method to create the catalogBatchProcess lambda and set up permissions and trigger
-  private createCatalogBatchLambda(productsTable: dynamodb.ITable, stocksTable: dynamodb.ITable, queue: sqs.Queue) {
+  private createCatalogBatchLambda(productsTable: dynamodb.ITable, stocksTable: dynamodb.ITable, queue: sqs.Queue, topic: sns.ITopic) {
     const catalogBatchProcess = new NodejsFunction(this, 'catalogBatchProcess', {
       entry: path.join(__dirname, '../lambda/products/catalogBatchProcess.ts'),
       ...this.lambdaConfig,
+      environment: {
+        ...this.lambdaConfig.environment,
+        SNS_TOPIC_ARN: topic.topicArn,
+      },
     });
 
     productsTable.grantWriteData(catalogBatchProcess);
     stocksTable.grantWriteData(catalogBatchProcess);
 
+    // Granting Lambda permissions to publish to the SNS topic
+    topic.grantPublish(catalogBatchProcess);
+
     catalogBatchProcess.addEventSource(new SqsEventSource(queue, { batchSize: 5 }));
+  }
+
+  // Moving the logic to a separate private method
+  private createProductTopic(): sns.ITopic {
+    const topic = new sns.Topic(this, 'CreateProductTopic', {
+      displayName: 'Product creation notification topic',
+      topicName: 'createProductProductTopic'
+    });
+
+    topic.addSubscription(new subs.EmailSubscription('berezjukalexandr@gmail.com'));
+
+    return topic;
   }
 }
