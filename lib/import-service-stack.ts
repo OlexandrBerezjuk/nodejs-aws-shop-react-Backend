@@ -7,8 +7,12 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as path from 'path';
 import { Construct } from 'constructs';
 
+interface ImportServiceStackProps extends cdk.StackProps {
+  catalogItemsQueue: cdk.aws_sqs.Queue;
+}
+
 export class ImportServiceStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ImportServiceStackProps) {
     super(scope, id, props);
 
     const bucket = new s3.Bucket(this, 'UploadedProducts', {
@@ -57,10 +61,11 @@ export class ImportServiceStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       environment: {
         REGION: this.region,
+        CATALOG_ITEMS_QUEUE_URL: props.catalogItemsQueue.queueUrl
       },
     });
 
-    bucket.grantRead(importFileParser);
+    bucket.grantReadWrite(importFileParser);
     bucket.grantDelete(importFileParser);
 
     bucket.addEventNotification(
@@ -68,5 +73,7 @@ export class ImportServiceStack extends cdk.Stack {
       new s3n.LambdaDestination(importFileParser),
       { prefix: 'uploaded/' } // Only for files in folder uploaded/
     );
+
+    props.catalogItemsQueue.grantSendMessages(importFileParser);
   }
 }
