@@ -9,11 +9,13 @@ const app = new cdk.App();
 
 const dbStack = new DatabaseStack(app, 'DatabaseStack');
 
-new ProductServiceStack(app, 'ProductServiceStack', {
+const productStack = new ProductServiceStack(app, 'ProductServiceStack', {
   productsTable: dbStack.productsTable,
   stocksTable: dbStack.stocksTable,
 });
-new ImportServiceStack(app, 'ImportServiceStack', {});
+new ImportServiceStack(app, 'ImportServiceStack', {
+  catalogItemsQueue: productStack.catalogItemsQueue,
+});
 // new ImportServiceStack(app, 'ImportServiceStack', {
 //   /* If you don't specify 'env', this stack will be environment-agnostic.
 //    * Account/Region-dependent features and context lookups will not work,
